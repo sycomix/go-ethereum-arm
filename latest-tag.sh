@@ -1,0 +1,8 @@
+#!/bin/bash
+
+LATEST=$(git tag | sort -r | head -n 1)
+
+if [ "${LATEST}" == "${CI_COMMIT_TAG}" ]; then 
+    docker tag ${DOCKER_NS}/${BASENAME}:${CI_COMMIT_TAG} ${DOCKER_NS}/${BASENAME}:latest;
+    docker tag ${DOCKER_NS}/${BASENAME}:alltools-${CI_COMMIT_TAG} ${DOCKER_NS}/${BASENAME}:alltools;
+fi

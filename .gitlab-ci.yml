@@ -1,0 +1,67 @@
+variables:
+  BASENAME: go-ethereum-arm32v7
+
+stages:
+  - check
+  - build
+  - mirror
+
+check:
+  image: yrzr/docker-arm32v7:stable-git
+  stage: check
+  tags:
+    - armhf
+    - docker
+  only:
+    - branches
+  script:
+    - apk add --no-cache openssh-client bash curl
+    - git config --global user.email $GIT_USER_EMAIL && git config --global user.name $GIT_USER_NAME
+    - mkdir -p ~/.ssh && echo "$GITLAB_SSH_PRIV_KEY" > ~/.ssh/id_rsa && ssh-keyscan -H git.yrzr.ocry.com > ~/.ssh/known_hosts && chmod -R 0600 ~/.ssh/
+    - git fetch --tags && ./check-version.sh && ./create-tags.sh
+    - git push --tags https://${GITLAB_USER_LOGIN}:${PERSONAL_ACCESS_TOKEN}@git.yrzr.ocry.com/docker/syncthing-armhf.git
+
+build:
+  image: yrzr/docker-arm32v7:stable-dind-git
+  stage: build
+  tags:
+    - armhf
+    - docker
+  only:
+    - tags
+  script:
+    # setup dockerd
+    - /usr/local/bin/dockerd-entrypoint.sh &
+    - apk add --no-cache bash
+    - docker info || sleep 5 && docker info
+    # fetch source code
+    - curl -L "https://github.com/ethereum/go-ethereum/archive/${CI_COMMIT_TAG}.tar.gz" -o go-ethereum.tar.gz
+    - tar -axpvf go-ethereum.tar.gz && cd go-ethereum*
+    # build
+    - sed -i 's/golang\:/arm32v6\/golang\:/' ./Dockerfile*
+    - sed -i 's/RUN cd/RUN export GOARM=\'7\' \&\& cd/' ./Dockerfile*
+    # - sed -i '0,/apk/{s/RUN apk/RUN export GOARM=\'7\' \&\& apk/}' ./Dockerfile*
+    - sed -i 's/alpine\:/arm32v6\/alpine\:/' ./Dockerfile*
+    - docker build -q -t ${DOCKER_NS}/${BASENAME}:${CI_COMMIT_TAG} -f ./Dockerfile ./
+    - docker build -q -t ${DOCKER_NS}/${BASENAME}:alltools-${CI_COMMIT_TAG} -f ./Dockerfile.alltools ./
+    # latest tag
+    - cd ../ && git fetch --tags && ./latest-tag.sh
+    # docker push
+    - docker login --username $DOCKER_USERNAME --password $DOCKER_PASSWORD 
+    - docker images && docker push ${DOCKER_NS}/${BASENAME}
+
+mirror:
+  image: yrzr/docker-arm32v7:stable-git
+  stage: mirror
+  only:
+    - master
+  except:
+    - schedules
+  script:
+    - mkdir -p ~/.ssh
+    - echo "$GITHUB_SSH_KEY" > ~/.ssh/id_rsa
+    - ssh-keyscan -H github.com > ~/.ssh/known_hosts
+    - chmod -R 0600 ~/.ssh/
+    - git remote | grep github || git remote add github git@github.com:yrzr/go-ethereum-armhf.git
+    - git fetch github
+    - git push github "$CI_BUILD_REF_NAME" -f
