@@ -39,7 +39,7 @@ build:
     - tar -xpvf go-ethereum.tar.gz && cd go-ethereum*
     # build
     - sed -i 's/golang\:/arm32v6\/golang\:/' ./Dockerfile*
-    - sed -i 's/RUN cd/RUN export GOARM=\'7\' \&\& cd/' ./Dockerfile*
+    - sed -i "s/RUN cd/RUN export GOARM=\'7\' \&\& cd/" ./Dockerfile*
     # - sed -i '0,/apk/{s/RUN apk/RUN export GOARM=\'7\' \&\& apk/}' ./Dockerfile*
     - sed -i 's/alpine\:/arm32v6\/alpine\:/' ./Dockerfile*
     - docker build -q -t ${DOCKER_NS}/${BASENAME}:${CI_COMMIT_TAG} -f ./Dockerfile ./
