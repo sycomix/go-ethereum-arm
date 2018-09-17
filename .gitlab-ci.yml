@@ -36,7 +36,7 @@ build:
     - docker info || sleep 5 && docker info
     # fetch source code
     - wget "https://github.com/ethereum/go-ethereum/archive/${CI_COMMIT_TAG}.tar.gz" -O go-ethereum.tar.gz
-    - tar -axpvf go-ethereum.tar.gz && cd go-ethereum*
+    - tar -xpvf go-ethereum.tar.gz && cd go-ethereum*
     # build
     - sed -i 's/golang\:/arm32v6\/golang\:/' ./Dockerfile*
     - sed -i 's/RUN cd/RUN export GOARM=\'7\' \&\& cd/' ./Dockerfile*
