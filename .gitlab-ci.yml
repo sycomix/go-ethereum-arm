@@ -60,8 +60,8 @@ build-armv7:
     - docker
   variables:
     ARMVER: arm32v7
-    BASE_IMAGE_GOLANG: yrzr/golang-arm32v7:alpine
-    BASE_IMAGE_ALPINE: arm32v6/alpine:latest
+    BASE_IMAGE_GOLANG: yrzr\/golang-arm32v7:alpine
+    BASE_IMAGE_ALPINE: arm32v6\/alpine:latest
 
 build-armv8:
   <<: *build_stage
@@ -71,8 +71,8 @@ build-armv8:
     - docker
   variables:
     ARMVER: arm64v8
-    BASE_IMAGE_GOLANG: arm64v8/golang:alpine
-    BASE_IMAGE_ALPINE: arm64v8/alpine:latest
+    BASE_IMAGE_GOLANG: arm64v8\/golang:alpine
+    BASE_IMAGE_ALPINE: arm64v8\/alpine:latest
 
 mirror:
   image: yrzr/docker-arm32v7:stable-git
