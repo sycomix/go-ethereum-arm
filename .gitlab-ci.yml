@@ -1,5 +1,5 @@
 variables:
-  BASENAME: go-ethereum-arm32v7
+  BASENAME: go-ethereum
 
 stages:
   - check
@@ -19,40 +19,61 @@ check:
     - git config --global user.email $GIT_USER_EMAIL && git config --global user.name $GIT_USER_NAME
     - mkdir -p ~/.ssh && echo "$GITLAB_SSH_PRIV_KEY" > ~/.ssh/id_rsa && ssh-keyscan -H git.yrzr.ocry.com > ~/.ssh/known_hosts && chmod -R 0600 ~/.ssh/
     - git fetch --tags && ./check-version.sh && ./create-tags.sh
-    - git push --tags https://${GITLAB_USER_LOGIN}:${PERSONAL_ACCESS_TOKEN}@git.yrzr.ocry.com/docker/go-ethereum-armhf.git
+    - git push --tags https://${GITLAB_USER_LOGIN}:${PERSONAL_ACCESS_TOKEN}@git.yrzr.ocry.com/docker/go-ethereum-arm.git
 
 build:
   image: yrzr/docker-arm32v7:stable-dind-git
   stage: build
-  tags:
-    - armhf
-    - docker
   only:
     - tags
-  script:
+  before_script:
     # setup dockerd
     - /usr/local/bin/dockerd-entrypoint.sh &
     - apk add --no-cache bash coreutils
     - docker info || sleep 5 && docker info
     # fetch source code
     - wget "https://github.com/ethereum/go-ethereum/archive/${CI_COMMIT_TAG}.tar.gz" -O go-ethereum.tar.gz
-    - tar -xpvf go-ethereum.tar.gz && cd go-ethereum*
+    - tar -xpvf go-ethereum.tar.gz 
+  script:
+    - cd go-ethereum*
     # build
-    - sed -i 's/golang\:/arm32v6\/golang\:/' ./Dockerfile*
-    - sed -i "s/RUN cd/RUN export GOARM=\'7\' \&\& cd/" ./Dockerfile*
-    # - sed -i '0,/apk/{s/RUN apk/RUN export GOARM=\'7\' \&\& apk/}' ./Dockerfile*
-    - sed -i 's/alpine\:/arm32v6\/alpine\:/' ./Dockerfile*
-    - docker build -q -t ${DOCKER_NS}/${BASENAME}:${CI_COMMIT_TAG} -f ./Dockerfile ./
-    - docker build -q -t ${DOCKER_NS}/${BASENAME}:alltools-${CI_COMMIT_TAG} -f ./Dockerfile.alltools ./
+    - sed -i "s/golang\:.*as/${BASE_IMAGE_GOLANG} as/" ./Dockerfile*
+    - sed -i "s/alpine\:.*/${BASE_IMAGE_ALPINE}/" ./Dockerfile*
+    - docker build -q -t ${DOCKER_NS}/${BASENAME}-${ARMVER}:${CI_COMMIT_TAG} -f ./Dockerfile ./
+    - docker build -q -t ${DOCKER_NS}/${BASENAME}-${ARMVER}:alltools-${CI_COMMIT_TAG} -f ./Dockerfile.alltools ./
     # latest tag
     - cd ../ && git fetch --tags && ./latest-tag.sh
     # docker push
     - docker login --username $DOCKER_USERNAME --password $DOCKER_PASSWORD 
-    - docker images && docker push ${DOCKER_NS}/${BASENAME}
+    - docker images && docker push ${DOCKER_NS}/${BASENAME}-${ARMVER}
+
+build-armv7:
+  <<: *build_stage
+  image: yrzr/docker-arm32v7:stable-dind-git
+  tags:
+    - armhf
+    - docker
+  variables:
+    ARMVER: arm32v7
+    BASE_IMAGE_GOLANG: yrzr/golang-arm32v7:alpine
+    BASE_IMAGE_ALPINE: arm32v6/alpine:latest
+
+build-armv8:
+  <<: *build_stage
+  image: arm64v8/docker:stable-dind-git
+  tags:
+    - aarch64
+    - docker
+  variables:
+    ARMVER: arm64v8
+    BASE_IMAGE_GOLANG: arm64v8/golang:alpine
+    BASE_IMAGE_ALPINE: arm64v8/alpine:latest
 
 mirror:
   image: yrzr/docker-arm32v7:stable-git
   stage: mirror
+  tags:
+    - armhf
   only:
     - master
   except:
@@ -62,6 +83,6 @@ mirror:
     - echo "$GITHUB_SSH_KEY" > ~/.ssh/id_rsa
     - ssh-keyscan -H github.com > ~/.ssh/known_hosts
     - chmod -R 0600 ~/.ssh/
-    - git remote | grep github || git remote add github git@github.com:yrzr/go-ethereum-armhf.git
+    - git remote | grep github || git remote add github git@github.com:yrzr/go-ethereum-arm.git
     - git fetch github
     - git push github "$CI_BUILD_REF_NAME" -f
