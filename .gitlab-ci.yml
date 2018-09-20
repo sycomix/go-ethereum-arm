@@ -21,7 +21,7 @@ check:
     - git fetch --tags && ./check-version.sh && ./create-tags.sh
     - git push --tags https://${GITLAB_USER_LOGIN}:${PERSONAL_ACCESS_TOKEN}@git.yrzr.ocry.com/docker/go-ethereum-arm.git
 
-build:
+.build_stage: &build_stage
   image: yrzr/docker-arm32v7:stable-dind-git
   stage: build
   only:
