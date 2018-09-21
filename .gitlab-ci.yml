@@ -37,7 +37,7 @@ prepare:
     - apk add --no-cache coreutils
     - sed -i "s/golang\:.*as/${BASE_IMAGE_GOLANG} as/" ./go-ethereum*/Dockerfile*
     - sed -i "s/alpine\:.*/${BASE_IMAGE_ALPINE}/" ./go-ethereum*/Dockerfile*
-    - sed -i 's/make geth/make all/' ../go-ethereum*/Dockerfile
+    - sed -i 's/make geth/make all/' ./go-ethereum*/Dockerfile
 
 .build_stage: &build_stage
   image: yrzr/docker-arm32v7:stable-dind-git
