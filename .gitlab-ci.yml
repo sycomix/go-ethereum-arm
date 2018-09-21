@@ -3,6 +3,7 @@ variables:
 
 stages:
   - check
+  - prepare
   - build
   - mirror
 
@@ -21,36 +22,44 @@ check:
     - git fetch --tags && ./check-version.sh && ./create-tags.sh
     - git push --tags https://${GITLAB_USER_LOGIN}:${PERSONAL_ACCESS_TOKEN}@git.yrzr.ocry.com/docker/go-ethereum-arm.git
 
+prepare:
+  image: yrzr/docker-arm32v7:stable-git
+  stage: prepare
+  tags:
+    - armhf
+    - docker
+  only:
+    - tags
+  script:
+    # fetch source code
+    - wget "https://github.com/ethereum/go-ethereum/archive/${CI_COMMIT_TAG}.tar.gz" -O go-ethereum.tar.gz
+    - tar -xpvf go-ethereum.tar.gz
+    - apk add --no-cache coreutils
+    - sed -i "s/golang\:.*as/${BASE_IMAGE_GOLANG} as/" ./go-ethereum*/Dockerfile*
+    - sed -i "s/alpine\:.*/${BASE_IMAGE_ALPINE}/" ./go-ethereum*/Dockerfile*
+    - sed -i 's/make geth/make all/' ../go-ethereum*/Dockerfile
+
 .build_stage: &build_stage
   image: yrzr/docker-arm32v7:stable-dind-git
   stage: build
   only:
     - tags
-  before_script:
+  dependencies: 
+    - prepare
+  script:
     # setup dockerd
     - /usr/local/bin/dockerd-entrypoint.sh &
     - apk add --no-cache bash coreutils git
     - docker info || sleep 5 && docker info
-    # fetch source code
-    - wget "https://github.com/ethereum/go-ethereum/archive/${CI_COMMIT_TAG}.tar.gz" -O go-ethereum.tar.gz
-    - tar -xpvf go-ethereum.tar.gz 
-  script:
-    - cd go-ethereum*
     # build
-    - sed -i "s/golang\:.*as/${BASE_IMAGE_GOLANG} as/" ./Dockerfile*
-    - sed -i "s/alpine\:.*/${BASE_IMAGE_ALPINE}/" ./Dockerfile*
+    - cd go-ethereum*
     - docker build -t ${DOCKER_NS}/${BASENAME}-${ARMVER}:${CI_COMMIT_TAG} -f ./Dockerfile ./
     - docker build -t ${DOCKER_NS}/${BASENAME}-${ARMVER}:alltools-${CI_COMMIT_TAG} -f ./Dockerfile.alltools ./
-    # little DAG version for mining at low end devices on private network
-    - sed -i 's/datasetInitBytes   = 1 << 30/datasetInitBytes   = 1 << 20/' consensus/ethash/algorithm.go
-    - sed -i 's/datasetGrowthBytes = 1 << 23/datasetGrowthBytes = 1 << 13/' consensus/ethash/algorithm.go
-    - docker build -t ${DOCKER_NS}/${BASENAME}-${ARMVER}-little-dag:${CI_COMMIT_TAG} -f ./Dockerfile ./
-    - docker build -t ${DOCKER_NS}/${BASENAME}-${ARMVER}-little-dag:alltools-${CI_COMMIT_TAG} -f ./Dockerfile.alltools ./
     # latest tag
     - cd ../ && git fetch --tags && ./latest-tag.sh
     # docker push
     - docker login --username $DOCKER_USERNAME --password $DOCKER_PASSWORD 
-    - docker images && docker push ${DOCKER_NS}/${BASENAME}-${ARMVER} && docker push ${DOCKER_NS}/${BASENAME}-${ARMVER}-little-dag
+    - docker images && docker push ${DOCKER_NS}/${BASENAME}-${ARMVER}
 
 build-armv7:
   <<: *build_stage
@@ -73,6 +82,36 @@ build-armv8:
     ARMVER: arm64v8
     BASE_IMAGE_GOLANG: arm64v8\/golang:alpine
     BASE_IMAGE_ALPINE: arm64v8\/alpine:latest
+
+build-armv7-little-dag:
+  <<: *build_stage
+  image: yrzr/docker-arm32v7:stable-dind
+  tags:
+    - armhf
+    - docker
+  variables:
+    ARMVER: arm32v7-little-dag
+    BASE_IMAGE_GOLANG: yrzr\/golang-arm32v7:alpine
+    BASE_IMAGE_ALPINE: arm32v6\/alpine:latest
+  before_script:
+    # little DAG version for mining at low end devices on private network
+    - sed -i 's/datasetInitBytes   = 1 << 30/datasetInitBytes   = 1 << 20/' ./go-ethereum*/consensus/ethash/algorithm.go
+    - sed -i 's/datasetGrowthBytes = 1 << 23/datasetGrowthBytes = 1 << 13/' ./go-ethereum*/consensus/ethash/algorithm.go
+
+build-armv8-little-dag:
+  <<: *build_stage
+  image: arm64v8/docker:stable-dind
+  tags:
+    - aarch64
+    - docker
+  variables:
+    ARMVER: arm64v8-little-dag
+    BASE_IMAGE_GOLANG: arm64v8\/golang:alpine
+    BASE_IMAGE_ALPINE: arm64v8\/alpine:latest
+  before_script:
+    # little DAG version for mining at low end devices on private network
+    - sed -i 's/datasetInitBytes   = 1 << 30/datasetInitBytes   = 1 << 20/' ./go-ethereum*/consensus/ethash/algorithm.go
+    - sed -i 's/datasetGrowthBytes = 1 << 23/datasetGrowthBytes = 1 << 13/' ./go-ethereum*/consensus/ethash/algorithm.go
 
 mirror:
   image: yrzr/docker-arm32v7:stable-git
