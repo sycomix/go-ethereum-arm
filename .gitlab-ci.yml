@@ -30,6 +30,9 @@ prepare:
     - docker
   only:
     - tags
+  cache:
+    paths:
+      - go-ethereum*
   script:
     # fetch source code
     - wget "https://github.com/ethereum/go-ethereum/archive/${CI_COMMIT_TAG}.tar.gz" -O go-ethereum.tar.gz
@@ -46,6 +49,10 @@ prepare:
     - tags
   dependencies: 
     - prepare
+  cache:
+    paths:
+      - go-ethereum*
+    policy: pull
   script:
     # setup dockerd
     - /usr/local/bin/dockerd-entrypoint.sh &
