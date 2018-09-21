@@ -3,7 +3,6 @@ variables:
 
 stages:
   - check
-  - prepare
   - build
   - mirror
 
@@ -22,41 +21,23 @@ check:
     - git fetch --tags && ./check-version.sh && ./create-tags.sh
     - git push --tags https://${GITLAB_USER_LOGIN}:${PERSONAL_ACCESS_TOKEN}@git.yrzr.ocry.com/docker/go-ethereum-arm.git
 
-prepare:
-  image: yrzr/docker-arm32v7:stable-git
-  stage: prepare
-  tags:
-    - armhf
-    - docker
-  only:
-    - tags
-  cache:
-    paths:
-      - go-ethereum*
-  script:
-    # fetch source code
-    - wget "https://github.com/ethereum/go-ethereum/archive/${CI_COMMIT_TAG}.tar.gz" -O go-ethereum.tar.gz
-    - tar -xpvf go-ethereum.tar.gz
-    - apk add --no-cache coreutils
-    - sed -i "s/golang\:.*as/${BASE_IMAGE_GOLANG} as/" ./go-ethereum*/Dockerfile*
-    - sed -i "s/alpine\:.*/${BASE_IMAGE_ALPINE}/" ./go-ethereum*/Dockerfile*
-    - sed -i 's/make geth/make all/' ./go-ethereum*/Dockerfile
-
 .build_stage: &build_stage
   image: yrzr/docker-arm32v7:stable-dind-git
   stage: build
   only:
     - tags
-  dependencies: 
-    - prepare
-  cache:
-    paths:
-      - go-ethereum*
-    policy: pull
+  before_script:
+    # fetch source code
+    - wget "https://github.com/ethereum/go-ethereum/archive/${CI_COMMIT_TAG}.tar.gz" -O go-ethereum.tar.gz
+    - tar -xpf go-ethereum.tar.gz
+    - apk add --no-cache coreutils
+    - sed -i "s/golang\:.*as/${BASE_IMAGE_GOLANG} as/" ./go-ethereum*/Dockerfile*
+    - sed -i "s/alpine\:.*/${BASE_IMAGE_ALPINE}/" ./go-ethereum*/Dockerfile*
+    - sed -i 's/make geth/make all/' ./go-ethereum*/Dockerfile
   script:
     # setup dockerd
     - /usr/local/bin/dockerd-entrypoint.sh &
-    - apk add --no-cache bash coreutils git
+    - apk add --no-cache bash git
     - docker info || sleep 5 && docker info
     # build
     - cd go-ethereum*
@@ -101,6 +82,13 @@ build-armv7-little-dag:
     BASE_IMAGE_GOLANG: yrzr\/golang-arm32v7:alpine
     BASE_IMAGE_ALPINE: arm32v6\/alpine:latest
   before_script:
+    # fetch source code
+    - wget "https://github.com/ethereum/go-ethereum/archive/${CI_COMMIT_TAG}.tar.gz" -O go-ethereum.tar.gz
+    - tar -xpf go-ethereum.tar.gz
+    - apk add --no-cache coreutils
+    - sed -i "s/golang\:.*as/${BASE_IMAGE_GOLANG} as/" ./go-ethereum*/Dockerfile*
+    - sed -i "s/alpine\:.*/${BASE_IMAGE_ALPINE}/" ./go-ethereum*/Dockerfile*
+    - sed -i 's/make geth/make all/' ./go-ethereum*/Dockerfile
     # little DAG version for mining at low end devices on private network
     - sed -i 's/datasetInitBytes   = 1 << 30/datasetInitBytes   = 1 << 20/' ./go-ethereum*/consensus/ethash/algorithm.go
     - sed -i 's/datasetGrowthBytes = 1 << 23/datasetGrowthBytes = 1 << 13/' ./go-ethereum*/consensus/ethash/algorithm.go
@@ -116,6 +104,13 @@ build-armv8-little-dag:
     BASE_IMAGE_GOLANG: arm64v8\/golang:alpine
     BASE_IMAGE_ALPINE: arm64v8\/alpine:latest
   before_script:
+    # fetch source code
+    - wget "https://github.com/ethereum/go-ethereum/archive/${CI_COMMIT_TAG}.tar.gz" -O go-ethereum.tar.gz
+    - tar -xpf go-ethereum.tar.gz
+    - apk add --no-cache coreutils
+    - sed -i "s/golang\:.*as/${BASE_IMAGE_GOLANG} as/" ./go-ethereum*/Dockerfile*
+    - sed -i "s/alpine\:.*/${BASE_IMAGE_ALPINE}/" ./go-ethereum*/Dockerfile*
+    - sed -i 's/make geth/make all/' ./go-ethereum*/Dockerfile
     # little DAG version for mining at low end devices on private network
     - sed -i 's/datasetInitBytes   = 1 << 30/datasetInitBytes   = 1 << 20/' ./go-ethereum*/consensus/ethash/algorithm.go
     - sed -i 's/datasetGrowthBytes = 1 << 23/datasetGrowthBytes = 1 << 13/' ./go-ethereum*/consensus/ethash/algorithm.go
