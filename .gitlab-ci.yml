@@ -22,7 +22,6 @@ check:
     - git push --tags https://${GITLAB_USER_LOGIN}:${PERSONAL_ACCESS_TOKEN}@git.yrzr.ocry.com/docker/go-ethereum-arm.git
 
 .build_stage: &build_stage
-  image: yrzr/docker-arm32v7:stable-dind-git
   stage: build
   only:
     - tags
@@ -51,7 +50,7 @@ check:
 
 build-armv7:
   <<: *build_stage
-  image: yrzr/docker-arm32v7:stable-dind
+  image: yrzr/docker-arm32v7:stable-dind-git
   tags:
     - armhf
     - docker
@@ -73,7 +72,7 @@ build-armv8:
 
 build-armv7-little-dag:
   <<: *build_stage
-  image: yrzr/docker-arm32v7:stable-dind
+  image: yrzr/docker-arm32v7:stable-dind-git
   tags:
     - armhf
     - docker
@@ -90,8 +89,7 @@ build-armv7-little-dag:
     - sed -i "s/alpine\:.*/${BASE_IMAGE_ALPINE}/" ./go-ethereum*/Dockerfile*
     - sed -i 's/make geth/make all/' ./go-ethereum*/Dockerfile
     # little DAG version for mining at low end devices on private network
-    - sed -i 's/datasetInitBytes   = 1 << 30/datasetInitBytes   = 1 << 20/' ./go-ethereum*/consensus/ethash/algorithm.go
-    - sed -i 's/datasetGrowthBytes = 1 << 23/datasetGrowthBytes = 1 << 13/' ./go-ethereum*/consensus/ethash/algorithm.go
+    - git apply ${CI_PROJECT_DIR}/0001-Little-DAG.patch
 
 build-armv8-little-dag:
   <<: *build_stage
@@ -112,8 +110,8 @@ build-armv8-little-dag:
     - sed -i "s/alpine\:.*/${BASE_IMAGE_ALPINE}/" ./go-ethereum*/Dockerfile*
     - sed -i 's/make geth/make all/' ./go-ethereum*/Dockerfile
     # little DAG version for mining at low end devices on private network
-    - sed -i 's/datasetInitBytes   = 1 << 30/datasetInitBytes   = 1 << 20/' ./go-ethereum*/consensus/ethash/algorithm.go
-    - sed -i 's/datasetGrowthBytes = 1 << 23/datasetGrowthBytes = 1 << 13/' ./go-ethereum*/consensus/ethash/algorithm.go
+    - apk add --no-cache git
+    - git apply ${CI_PROJECT_DIR}/0001-Little-DAG.patch
 
 mirror:
   image: yrzr/docker-arm32v7:stable-git
