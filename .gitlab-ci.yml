@@ -33,7 +33,7 @@ check:
     - sed -i "s/golang\:.*as/${BASE_IMAGE_GOLANG} as/" ./go-ethereum*/Dockerfile*
     - sed -i "s/alpine\:.*/${BASE_IMAGE_ALPINE}/" ./go-ethereum*/Dockerfile*
     - sed -i 's/make geth/make all/' ./go-ethereum*/Dockerfile
-    - sed -i 's/make all/make all -j3' ./go-thereum*/Dockerfile*
+    - sed -i 's/make all/make all -j3/' ./go-thereum*/Dockerfile*
   script:
     # setup dockerd
     - /usr/local/bin/dockerd-entrypoint.sh &
@@ -89,7 +89,7 @@ build-armv7-little-dag:
     - sed -i "s/golang\:.*as/${BASE_IMAGE_GOLANG} as/" ./go-ethereum*/Dockerfile*
     - sed -i "s/alpine\:.*/${BASE_IMAGE_ALPINE}/" ./go-ethereum*/Dockerfile*
     - sed -i 's/make geth/make all/' ./go-ethereum*/Dockerfile
-    - sed -i 's/make all/make all -j3' ./go-thereum*/Dockerfile*
+    - sed -i 's/make all/make all -j3/' ./go-thereum*/Dockerfile*
     # little DAG version for mining at low end devices on private network
     - cd ./go-ethereum* && git apply ${CI_PROJECT_DIR}/0001-Little-DAG.patch
 
@@ -111,7 +111,7 @@ build-armv8-little-dag:
     - sed -i "s/golang\:.*as/${BASE_IMAGE_GOLANG} as/" ./go-ethereum*/Dockerfile*
     - sed -i "s/alpine\:.*/${BASE_IMAGE_ALPINE}/" ./go-ethereum*/Dockerfile*
     - sed -i 's/make geth/make all/' ./go-ethereum*/Dockerfile
-    - sed -i 's/make all/make all -j3' ./go-thereum*/Dockerfile*
+    - sed -i 's/make all/make all -j3/' ./go-thereum*/Dockerfile*
     # little DAG version for mining at low end devices on private network
     - apk add --no-cache git
     - cd ./go-ethereum* && git apply ${CI_PROJECT_DIR}/0001-Little-DAG.patch
