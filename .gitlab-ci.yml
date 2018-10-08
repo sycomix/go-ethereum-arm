@@ -33,6 +33,7 @@ check:
     - sed -i "s/golang\:.*as/${BASE_IMAGE_GOLANG} as/" ./go-ethereum*/Dockerfile*
     - sed -i "s/alpine\:.*/${BASE_IMAGE_ALPINE}/" ./go-ethereum*/Dockerfile*
     - sed -i 's/make geth/make all/' ./go-ethereum*/Dockerfile
+    - sed -i ‘s/make all/make -j3 all’ ./go-thereum*/Dockerfile*
   script:
     # setup dockerd
     - /usr/local/bin/dockerd-entrypoint.sh &
