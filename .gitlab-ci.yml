@@ -92,6 +92,7 @@ build-armv7-little-dag:
     - sed -i 's/make all/make all -j3/' ./go-ethereum*/Dockerfile*
     # little DAG version for mining at low end devices on private network
     - cd ./go-ethereum* && git apply ${CI_PROJECT_DIR}/0001-Little-DAG.patch
+    - cd ${CI_PROJECT_DIR}
 
 build-armv8-little-dag:
   <<: *build_stage
@@ -115,6 +116,7 @@ build-armv8-little-dag:
     # little DAG version for mining at low end devices on private network
     - apk add --no-cache git
     - cd ./go-ethereum* && git apply ${CI_PROJECT_DIR}/0001-Little-DAG.patch
+    - cd ${CI_PROJECT_DIR}
 
 mirror:
   image: yrzr/docker-arm32v7:stable-git
